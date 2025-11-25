@@ -1,0 +1,176 @@
+<?xml version="1.0"?>
+<robot name="gimbal" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ========== GLOBAL MATERIALS ========== -->
+  <material name="base_grey">
+    <color rgba="0.8 0.8 0.8 1.0"/>
+  </material>
+
+  <material name="body_dark">
+    <color rgba="0.2 0.2 0.2 1.0"/>
+  </material>
+
+  <material name="cam_yellow">
+    <color rgba="1.0 0.9 0.0 1.0"/>
+  </material>
+
+  <!-- ========== DIMENSIONS (m) ========== -->
+  <!-- Base plate: 5 cm x 3 cm x 0.5 cm -->
+  <xacro:property name="base_x" value="0.05"/>
+  <xacro:property name="base_y" value="0.03"/>
+  <xacro:property name="base_z" value="0.005"/>
+
+  <!-- Yaw servo “hub” as cylinder: Ø 1 cm, height 1 cm -->
+  <xacro:property name="yaw_r" value="0.005"/>
+  <xacro:property name="yaw_h" value="0.01"/>
+
+  <!-- Body (approx. triangle) as box: 5 cm high, 3 cm deep, 2 cm thick -->
+  <xacro:property name="body_x" value="0.02"/>   <!-- thickness left-right -->
+  <xacro:property name="body_y" value="0.03"/>   <!-- depth front-back -->
+  <xacro:property name="body_z" value="0.05"/>   <!-- height -->
+
+  <!-- Camera plate on side: 3 cm x 2.5 cm x 0.5 cm -->
+  <xacro:property name="cam_x" value="0.03"/>
+  <xacro:property name="cam_y" value="0.025"/>
+  <xacro:property name="cam_z" value="0.005"/>
+
+  <!-- Small offset from body top to camera plate centre -->
+  <xacro:property name="cam_offset" value="0.015"/>
+
+  <!-- =========================
+       LINKS
+       ========================= -->
+
+  <!-- base_link: rectangular plate on the ground -->
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 ${base_z/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${base_x} ${base_y} ${base_z}"/>
+      </geometry>
+      <material name="base_grey"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${base_z/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${base_x} ${base_y} ${base_z}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.05"/>
+      <origin xyz="0 0 ${base_z/2}" rpy="0 0 0"/>
+      <inertia ixx="1e-4" iyy="1e-4" izz="1e-4"
+               ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+
+  <!-- yaw_link: small vertical cylinder at center of plate -->
+  <link name="yaw_link">
+    <visual>
+      <origin xyz="0 0 ${yaw_h/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="${yaw_r}" length="${yaw_h}"/>
+      </geometry>
+      <material name="body_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${yaw_h/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="${yaw_r}" length="${yaw_h}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.02"/>
+      <origin xyz="0 0 ${yaw_h/2}" rpy="0 0 0"/>
+      <inertia ixx="5e-5" iyy="5e-5" izz="5e-5"
+               ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+
+  <!-- pitch_link: vertical body (this is the “triangle” approx) -->
+  <link name="pitch_link">
+    <visual>
+      <!-- Base of body sits on top of yaw_link -->
+      <origin xyz="0 0 ${body_z/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${body_x} ${body_y} ${body_z}"/>
+      </geometry>
+      <material name="body_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${body_z/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${body_x} ${body_y} ${body_z}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.04"/>
+      <origin xyz="0 0 ${body_z/2}" rpy="0 0 0"/>
+      <inertia ixx="1e-3" iyy="1e-3" izz="1e-3"
+               ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+
+  <!-- camera_link: plate mounted on the SIDE of the body -->
+  <link name="camera_link">
+    <visual>
+      <!-- Attach to front face of body, centred, a bit above joint -->
+      <origin
+        xyz="${body_x/2 + cam_z/2} 0 ${body_z - cam_offset}"
+        rpy="0 1.5708 0"/>
+      <!-- rpy rotates so plate normal points forward -->
+      <geometry>
+        <box size="${cam_x} ${cam_y} ${cam_z}"/>
+      </geometry>
+      <material name="cam_yellow"/>
+    </visual>
+    <collision>
+      <origin
+        xyz="${body_x/2 + cam_z/2} 0 ${body_z - cam_offset}"
+        rpy="0 1.5708 0"/>
+      <geometry>
+        <box size="${cam_x} ${cam_y} ${cam_z}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.01"/>
+      <origin
+        xyz="${body_x/2 + cam_z/2} 0 ${body_z - cam_offset}"
+        rpy="0 0 0"/>
+      <inertia ixx="5e-4" iyy="5e-4" izz="5e-4"
+               ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+
+  <!-- =========================
+       JOINTS
+       ========================= -->
+
+  <!-- Yaw: base_link -> yaw_link (rotates around Z, like your bottom servo) -->
+  <joint name="yaw_joint" type="continuous">
+    <!-- joint origin at centre of cylinder base -->
+    <origin xyz="0 0 ${base_z}" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="yaw_link"/>
+    <!-- rotation around Z (upwards) -->
+    <axis xyz="0 0 1"/>
+  </joint>
+
+  <!-- Pitch: yaw_link -> pitch_link (rotates around Y, up/down) -->
+  <joint name="pitch_joint" type="continuous">
+    <!-- bottom of body sits on top of yaw_link -->
+    <origin xyz="0 0 ${yaw_h}" rpy="0 0 0"/>
+    <parent link="yaw_link"/>
+    <child link="pitch_link"/>
+    <!-- rotation around Y (right-hand rule) -->
+    <axis xyz="0 1 0"/>
+  </joint>
+
+  <!-- Fixed joint from body to camera plate -->
+  <joint name="camera_fixed" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <parent link="pitch_link"/>
+    <child link="camera_link"/>
+  </joint>
+
+</robot>

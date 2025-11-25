@@ -1,0 +1,188 @@
+<?xml version="1.0"?>
+<robot name="head_tracker_gimbal" xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <!-- ===== Basic dimensions (meters) ===== -->
+  <xacro:property name="base_len"  value="0.060"/>   <!-- 6 cm -->
+  <xacro:property name="base_wid"  value="0.040"/>   <!-- 4 cm -->
+  <xacro:property name="base_thk"  value="0.004"/>   <!-- 4 mm -->
+
+  <xacro:property name="servo_x"   value="0.032"/>
+  <xacro:property name="servo_y"   value="0.012"/>
+  <xacro:property name="servo_z"   value="0.025"/>
+
+  <xacro:property name="col_x"     value="0.010"/>
+  <xacro:property name="col_y"     value="0.030"/>
+  <xacro:property name="col_z"     value="0.050"/>
+
+  <xacro:property name="pservo_x"  value="${servo_x}"/>
+  <xacro:property name="pservo_y"  value="${servo_y}"/>
+  <xacro:property name="pservo_z"  value="${servo_z}"/>
+
+  <!-- plate_x = width, plate_y = height, plate_z = thickness -->
+  <xacro:property name="plate_x"   value="0.040"/>   <!-- 4 cm width -->
+  <xacro:property name="plate_y"   value="0.030"/>   <!-- 3 cm height -->
+  <xacro:property name="plate_z"   value="0.003"/>   <!-- 3 mm thick -->
+
+  <!-- inertia helper -->
+  <xacro:macro name="box_inertial" params="mass x y z">
+    <inertial>
+      <mass value="${mass}"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia
+        ixx="${mass*(y*y + z*z)/12.0}"
+        iyy="${mass*(x*x + z*z)/12.0}"
+        izz="${mass*(x*x + y*y)/12.0}"
+        ixy="0.0" ixz="0.0" iyz="0.0"/>
+    </inertial>
+  </xacro:macro>
+
+  <!-- materials -->
+  <material name="aluminium_grey">
+    <color rgba="0.8 0.8 0.8 1.0"/>
+  </material>
+
+  <material name="servo_black">
+    <color rgba="0.1 0.1 0.1 1.0"/>
+  </material>
+
+  <material name="cam_yellow">
+    <color rgba="0.9 0.9 0.3 1.0"/>
+  </material>
+
+  <!-- ========== LINKS ========== -->
+
+  <!-- base -->
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 ${base_thk/2.0}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${base_len} ${base_wid} ${base_thk}"/>
+      </geometry>
+      <material name="aluminium_grey"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${base_thk/2.0}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${base_len} ${base_wid} ${base_thk}"/>
+      </geometry>
+    </collision>
+    <xacro:box_inertial mass="0.05" x="${base_len}" y="${base_wid}" z="${base_thk}"/>
+  </link>
+
+  <!-- yaw link (bottom servo + column) -->
+  <link name="yaw_link">
+    <visual>
+      <origin xyz="0 0 ${servo_z/2.0 + base_thk}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${servo_x} ${servo_y} ${servo_z}"/>
+      </geometry>
+      <material name="servo_black"/>
+    </visual>
+
+    <visual>
+      <origin xyz="0 ${col_y/2.0 + servo_y/2.0} ${base_thk + servo_z + col_z/2.0}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${col_x} ${col_y} ${col_z}"/>
+      </geometry>
+      <material name="aluminium_grey"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0 0 ${servo_z/2.0 + base_thk}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${servo_x} ${servo_y} ${servo_z}"/>
+      </geometry>
+    </collision>
+    <xacro:box_inertial mass="0.03" x="${servo_x}" y="${servo_y}" z="${servo_z}"/>
+  </link>
+
+  <!-- pitch link (upper servo + side bracket, above joint) -->
+  <link name="pitch_link">
+    <visual>
+      <origin xyz="0 0 ${pservo_z/2.0}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${pservo_x} ${pservo_y} ${pservo_z}"/>
+      </geometry>
+      <material name="servo_black"/>
+    </visual>
+
+    <visual>
+      <origin xyz="0 ${pservo_y/2.0 + 0.010} ${pservo_z/2.0}" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.008 0.020 ${pservo_z}"/>
+      </geometry>
+      <material name="aluminium_grey"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0 0 ${pservo_z/2.0}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${pservo_x} ${pservo_y} ${pservo_z}"/>
+      </geometry>
+    </collision>
+    <xacro:box_inertial mass="0.03" x="${pservo_x}" y="${pservo_y}" z="${pservo_z}"/>
+  </link>
+
+  <!-- camera plate: vertical side plate on front of pitch servo -->
+  <link name="camera_plate">
+    <visual>
+      <!--
+        plate is vertical:
+        x = width (along left–right)
+        z = height (up–down)
+        y = thickness (front–back)
+
+        We place it on the +Y side of the pitch servo, roughly centered in height.
+      -->
+      <origin
+        xyz="0
+             ${pservo_y/2.0 + plate_z/2.0 + 0.002}
+             ${pservo_z/2.0}"
+        rpy="0 0 0"/>
+      <geometry>
+        <!-- width  = plate_x, thickness = plate_z, height = plate_y -->
+        <box size="${plate_x} ${plate_z} ${plate_y}"/>
+      </geometry>
+      <material name="cam_yellow"/>
+    </visual>
+    <collision>
+      <origin
+        xyz="0
+             ${pservo_y/2.0 + plate_z/2.0 + 0.002}
+             ${pservo_z/2.0}"
+        rpy="0 0 0"/>
+      <geometry>
+        <box size="${plate_x} ${plate_z} ${plate_y}"/>
+      </geometry>
+    </collision>
+    <xacro:box_inertial mass="0.01" x="${plate_x}" y="${plate_z}" z="${plate_y}"/>
+  </link>
+
+  <!-- ========== JOINTS ========== -->
+
+  <!-- yaw: about Z at base -->
+  <joint name="yaw_joint" type="revolute">
+    <origin xyz="0 0 ${base_thk}" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child  link="yaw_link"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.1416" upper="3.1416" effort="1.0" velocity="4.0"/>
+  </joint>
+
+  <!-- pitch: about X at top of column -->
+  <joint name="pitch_joint" type="revolute">
+    <origin xyz="0 0 ${base_thk + servo_z + col_z}" rpy="0 0 0"/>
+    <parent link="yaw_link"/>
+    <child  link="pitch_link"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-1.57" upper="1.57" effort="1.0" velocity="4.0"/>
+  </joint>
+
+  <!-- fixed camera plate -->
+  <joint name="camera_fixed" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <parent link="pitch_link"/>
+    <child  link="camera_plate"/>
+  </joint>
+
+</robot>
