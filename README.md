@@ -81,7 +81,7 @@ Example:
 
 Upload:
 
-esp32/pinch_to_servo_udp_sta.ino
+`` esp32/pinch_to_servo_udp_sta.ino ``
 
 ---
 
@@ -95,11 +95,11 @@ This node:
 
 ### Run the bridge:
 
-ros2 run gimbal_udp_bridge joint_to_udp –ros-args -p esp_ip:=
+`` ros2 run gimbal_udp_bridge joint_to_udp –ros-args -p esp_ip:=``
 
 Example:
 
-ros2 run gimbal_udp_bridge joint_to_udp –ros-args -p esp_ip:=192.168.1.22
+``` ros2 run gimbal_udp_bridge joint_to_udp –ros-args -p esp_ip:=192.168.1.22 ```
 
 You should see:
 
@@ -125,19 +125,19 @@ This simultaneously drives:
 
 ## 🛠 5. Build Instructions
 
-cd ~/ros2_head_tracker_gimbal_ws
+`` cd ~/ros2_head_tracker_gimbal_ws
 rm -rf build install log
 colcon build
-source install/setup.bash
+source install/setup.bash ``
 
 Verify packages:
 
-ros2 pkg list | grep gimbal
+`` ros2 pkg list | grep gimbal ``
 
 Expected:
 
-gimbal_description
-gimbal_udp_bridge
+`` gimbal_description
+gimbal_udp_bridge ``
 
 ---
 
