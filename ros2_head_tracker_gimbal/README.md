@@ -1,243 +1,197 @@
-# 🤖 ROS2 Head Tracker Gimbal  
-Dual-Servo Pan–Tilt System Controlled by Head Direction Tracking (OpenCV + Mediapipe)
+# ROS2 Head Tracker Gimbal – Real-Time Face-Tracking Gimbal (URDF + RViz + ESP32 WiFi Control)
 
-This repository contains the complete implementation of a **2-DOF dual-servo gimbal** that can be controlled in real time using **head direction tracking** from a webcam or external vision system.  
-The project supports:
+This repository contains a complete ROS2-based head-tracking gimbal system integrating:
 
-- Real-time head yaw/pitch detection  
-- UDP communication between Python → Arduino  
-- Servo-based pan–tilt control  
-- ROS2 URDF/Xacro full model of the physical gimbal  
-- RViz2 visualization  
-- ROS2-ready package structure  
+- **Custom URDF/XACRO 2-DOF gimbal model**
+- **RViz2 visualization**
+- **ROS2 → ESP32 WiFi UDP servo control**
+- **Physical MG90S / MG996R gimbal**
+- **Real-time face-tracking using OpenCV + MediaPipe**
 
----
+The project creates a full end-to-end pipeline:
 
-## 🖼️ System Overview
-
-### Physical Gimbal  
-A dual-servo aluminium gimbal made of:
-- Base plate  
-- Yaw servo (bottom)
-- Vertical column
-- Pitch servo (upper)
-- Camera plate mount  
-
-### ROS2 Model  
-✔ Fully built URDF/Xacro  
-✔ Two revolute joints: `yaw_joint`, `pitch_joint`  
-✔ Visualized in RViz2  
-✔ Dimensions based on real hardware
+**Simulation → ROS2 → UDP → ESP32 → Servos → Physical gimbal**
 
 ---
 
-## 🎥 Demo (GIF)  
-(Add your GIF here)
-
+## 📦 Repository Structure
 ```
-![demo](media/head_tracker_demo.gif)
-```
-
----
-
-# 🚀 Features
-
-### 🔹 **1. Head Tracking (OpenCV + Mediapipe)**
-- Face detection
-- Landmark extraction (eyes, nose)
-- Direction vectors
-- Continuous yaw & pitch score  
-- Roll compensation
-
-### 🔹 **2. 2-Servo Pan–Tilt Control**
-- Servo1 = Yaw (left–right)
-- Servo2 = Pitch (up–down)
-- 90° center mapping
-- Direction-to-servo mapping with smoothing & sensitivity tuning
-
-### 🔹 **3. ROS2 Integration**
-- URDF/Xacro robot model  
-- RViz2 visualization  
-- Joint State Publisher GUI  
-- Ready for TF broadcasting  
-- Ready for hardware bridge (Arduino or ESP32)
-
----
-
-# ⚙️ Installation
-
-### **Clone the repository**
-```bash
-git clone https://github.com/Mohammed-Shehsin/ros2-head-tracker-gimbal.git
-cd ros2-head-tracker-gimbal
-```
-
-### **Python Dependencies**
-Create `requirements.txt` (already included):
-
-```
-mediapipe
-opencv-python
-numpy
-pyserial
-```
-
-Install:
-```bash
-pip install -r requirements.txt
-```
-
----
-
-# 🧠 Head Tracking – Mathematical Model
-
-### **Yaw (Left–Right Rotation)**
-$begin:math:display$
-S\_\{\\text\{yaw\}\}
-\=
-\\frac\{d\_R \- d\_L\}\{d\_R \+ d\_L\}
-$end:math:display$
-
-- $begin:math:text$ d\_R $end:math:text$: Horizontal distance from nose to right eye  
-- $begin:math:text$ d\_L $end:math:text$: Horizontal distance from nose to left eye  
-- $begin:math:text$ S\_\{\\text\{yaw\}\} \> 0 $end:math:text$ → Turning Right  
-- $begin:math:text$ S\_\{\\text\{yaw\}\} \< 0 $end:math:text$ → Turning Left  
-
----
-
-### **Pitch (Up–Down Rotation)**
-
-$begin:math:display$
-S\_\{\\text\{pitch\}\}
-\=
-\\frac\{d\_D \- d\_U\}\{d\_D \+ d\_U\}
-$end:math:display$
-
-- $begin:math:text$ d\_U $end:math:text$: Vertical distance nose → upper face region  
-- $begin:math:text$ d\_D $end:math:text$: Vertical distance nose → chin  
-- $begin:math:text$ S\_\{\\text\{pitch\}\} \> 0 $end:math:text$ → Looking Up  
-- $begin:math:text$ S\_\{\\text\{pitch\}\} \< 0 $end:math:text$ → Looking Down  
-
----
-
-### **Roll Compensation (Head Tilt)**
-
-$begin:math:display$
-\\theta\_\{\\text\{roll\}\}
-\=
-\\arctan2\( y\_\{RE\} \- y\_\{LE\}\,\\\; x\_\{RE\} \- x\_\{LE\} \)
-$end:math:display$
-
-All facial points are rotated by $begin:math:text$ \-\\theta\_\{\\text\{roll\}\} $end:math:text$ to stabilize yaw/pitch output.
-
----
-
-# 🛠️ Hardware Setup
-
-### Components Used:
-- MG90S micro servos ×2  
-- Aluminium pan–tilt bracket  
-- Arduino Nano / ESP32  
-- External 5V servo supply  
-- Web camera or USB cam  
-- Optional ball-head for mounting  
-
-### Wiring:
-```
-Arduino D3 → Servo1 (Yaw)
-Arduino D5 → Servo2 (Pitch)
-5V External → Servo Power
-GND Shared between Arduino & Servos
-```
-
----
-
-# 📡 Communication (Python → Arduino)
-
-### UDP Packet Format
-```
-<yaw_angle>,<pitch_angle>
-```
-
-Example:
-```
-120,80
-```
-
-### Arduino receives → moves servos accordingly.
-
----
-
-# 🦾 ROS2 URDF/Xacro Model
-
-### Package structure:
-```
-gimbal_description/
- ┣ urdf/
- ┃ ┗ gimbal.urdf.xacro
- ┣ rviz/
- ┃ ┗ display.rviz
- ┣ launch/
- ┃ ┗ display.launch.py
- ┗ package.xml
-```
-
-### Launch the model:
-```bash
-ros2 launch gimbal_description display.launch.py
-```
-
-To move joints:
-```bash
-ros2 run joint_state_publisher_gui joint_state_publisher_gui
-```
-
----
-
-# 🧩 Project Structure
-
-```
-.
-├── scripts/
-│   └── head_tracker_udp.py
-├── arduino/
-│   └── dual_servo_udp.ino
-├── gimbal_description/
-│   ├── urdf/
-│   ├── launch/
-│   ├── rviz/
-│   └── CMakeLists.txt
+ros2_head_tracker_gimbal/
+│
+├── ros2/
+│   ├── gimbal_description/
+│   └── gimbal_udp_bridge/
+│
+├── esp32/
+│   └── pinch_to_servo_udp_sta.ino
+│
 ├── media/
-│   └── demo.gif
+│   ├── demo.gif
+│   ├── wiring.png
+│   └── model_render.png
+│
 └── README.md
 ```
 
 ---
 
-# 📘 Roadmap
+## 🔧 1. Gimbal URDF Description (`gimbal_description`)
 
-### ✅ Completed  
-✔ Head tracking  
-✔ Servo control  
-✔ UDP communication  
-✔ ROS2 URDF model  
-✔ RViz visualization  
+A realistic 2-axis gimbal consisting of:
 
-### 🔜 Next  
-⬜ ROS2 Hardware Interface (ros2_control)  
-⬜ TF broadcasting  
-⬜ Camera mount CAD model  
-⬜ PID-based servo smoothing  
-⬜ Gazebo simulation  
+- **Yaw joint** (bottom servo)
+- **Pitch joint** (top servo)
+- **Base plate**
+- **Support column**
+- **Camera mounting plate**
+
+Main file:
+
+src/gimbal_description/urdf/gimbal.urdf.xacro
+
+### Launch RViz:
+
+ros2 launch gimbal_description display.launch.py
+
+This opens:
+
+- The URDF model in RViz  
+- `joint_state_publisher_gui` for real-time control
 
 ---
 
-# 🤝 Contributing  
-Pull requests are welcome! Please open an issue first.
+## 🌐 2. ESP32 WiFi + UDP Servo Controller
+
+The ESP32 receives servo angles via UDP:
+
+<yaw_angle>,<pitch_angle>
+
+Example:
+
+45,120
+
+### Servo Connections
+
+| Function | ESP32 Pin |
+|---------|-----------|
+| Yaw servo | GPIO 18 |
+| Pitch servo | GPIO 19 |
+| PWM freq | 50 Hz |
+| Pulse width | 500–2400 µs |
+
+Upload:
+
+esp32/pinch_to_servo_udp_sta.ino
 
 ---
 
-# 📄 License  
+## 🧠 3. ROS2 → UDP Bridge (`gimbal_udp_bridge`)
+
+This node:
+
+1. Subscribes to `/joint_states`
+2. Converts radians → degrees
+3. Sends angles to ESP32 via UDP
+
+### Run the bridge:
+
+ros2 run gimbal_udp_bridge joint_to_udp –ros-args -p esp_ip:=
+
+Example:
+
+ros2 run gimbal_udp_bridge joint_to_udp –ros-args -p esp_ip:=192.168.1.22
+
+You should see:
+
+[UDP] Sent: 90,120
+
+---
+
+## 🎥 4. Face Tracking (Python + MediaPipe)
+
+A Python script (added soon) performs:
+
+- Face landmark detection  
+- Nose + boundary vector estimation  
+- Head orientation → yaw/pitch  
+- Publishes `/joint_states` in real time  
+
+This simultaneously drives:
+
+- RViz simulation  
+- Physical gimbal through the ESP32  
+
+---
+
+## 🛠 5. Build Instructions
+
+cd ~/ros2_head_tracker_gimbal_ws
+rm -rf build install log
+colcon build
+source install/setup.bash
+
+Verify packages:
+
+ros2 pkg list | grep gimbal
+
+Expected:
+
+gimbal_description
+gimbal_udp_bridge
+
+---
+
+## 🧪 6. Full Pipeline Test
+
+### Step 1 — Power ESP32 + Servos  
+Use external **5–6V supply** (never power from USB!).  
+Common GND required.
+
+### Step 2 — Start RViz
+
+ros2 launch gimbal_description display.launch.py
+
+### Step 3 — Start UDP Bridge
+
+ros2 run gimbal_udp_bridge joint_to_udp –ros-args -p esp_ip:=192.168.1.22
+
+### Step 4 — Move sliders in RViz  
+The physical gimbal should follow instantly.
+
+---
+
+## ⚙ Hardware Used
+
+- ESP32 DevKit V1
+- MG90S / MG996R servos
+- External 6V supply
+- Custom gimbal frame
+- Ubuntu 22.04
+- ROS2 Humble
+- RViz2 + joint_state_publisher_gui
+
+---
+
+## 📌 Notes
+
+- Always use separate servo power  
+- Connect grounds together  
+- UDP is fast but not guaranteed (acceptable for servo control)  
+- Extra smoothing/PID can be added
+
+---
+
+## 📜 License
+
 MIT License
 
 ---
+
+## 👤 Author
+
+**Mohammed Shehsin**  
+Robotics & Automation Engineer  
+Poznań University of Technology  
+GitHub: https://github.com/Mohammed-Shehsin
+
+If you find this project helpful, please ⭐ the repository.
